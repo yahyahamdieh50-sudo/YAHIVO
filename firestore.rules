@@ -1,0 +1,261 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+    function isOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+    // Zero-DB-read admin check for list queries (Pillar 8 Cost-Optimization)
+    function isBootstrappedAdmin() {
+      return isVerified() && request.auth.token.email == 'yahyahamdieh50@gmail.com';
+    }
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Helpers (Pillar 2 & Pillar 5)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'plan', 'dailyAiCount', 'lastAiDate', 'completedLessons', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'role', 'plan', 'dailyAiCount', 'lastAiDate', 'completedLessons', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.role is string && data.role.size() <= 32 && data.role in ['learner', 'reviewer', 'editor', 'admin'] &&
+        data.plan is string && data.plan.size() <= 32 && data.plan in ['free', 'pro', 'premium'] &&
+        data.dailyAiCount is number && data.dailyAiCount >= 0 && data.dailyAiCount <= 10000 &&
+        data.lastAiDate is string && data.lastAiDate.size() <= 20 &&
+        data.completedLessons is list && data.completedLessons.size() <= 50 &&
+        (data.completedLessons.size() == 0 || (data.completedLessons[0] is string && data.completedLessons[0].size() <= 80)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserSession(data) {
+      return data.keys().hasAll(['uid', 'activeDeviceId', 'deviceLabel', 'transferCount', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'activeDeviceId', 'deviceLabel', 'transferCount', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.activeDeviceId is string && data.activeDeviceId.size() >= 1 && data.activeDeviceId.size() <= 128 && data.activeDeviceId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.deviceLabel is string && data.deviceLabel.size() >= 1 && data.deviceLabel.size() <= 120 &&
+        data.transferCount is number && data.transferCount >= 0 && data.transferCount <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTechnicalDocument(data) {
+      return data.keys().hasAll(['title', 'docCode', 'category', 'modelNumber', 'modelFamily', 'revision', 'docType', 'sectionRef', 'extractedContent', 'safetyNotes', 'status', 'uploadedBy', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'docCode', 'category', 'modelNumber', 'modelFamily', 'revision', 'docType', 'sectionRef', 'extractedContent', 'safetyNotes', 'status', 'uploadedBy', 'createdAt', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.docCode is string && data.docCode.size() >= 1 && data.docCode.size() <= 64 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 80 &&
+        data.modelNumber is string && data.modelNumber.size() >= 1 && data.modelNumber.size() <= 80 &&
+        data.modelFamily is string && data.modelFamily.size() >= 1 && data.modelFamily.size() <= 80 &&
+        data.revision is string && data.revision.size() >= 1 && data.revision.size() <= 32 &&
+        data.docType is string && data.docType.size() >= 1 && data.docType.size() <= 64 &&
+        data.sectionRef is string && data.sectionRef.size() >= 1 && data.sectionRef.size() <= 120 &&
+        data.extractedContent is string && data.extractedContent.size() >= 1 && data.extractedContent.size() <= 8000 &&
+        data.safetyNotes is string && data.safetyNotes.size() <= 1000 &&
+        data.status is string && data.status.size() <= 32 && data.status in ['draft', 'approved', 'archived'] &&
+        data.uploadedBy is string && data.uploadedBy.size() >= 1 && data.uploadedBy.size() <= 128 && data.uploadedBy.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPreCommChecklist(data) {
+      return data.keys().hasAll(['ownerId', 'projectName', 'modelNumber', 'serialNumber', 'inspectorName', 'summaryStatus', 'passedCount', 'failedCount', 'notes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'projectName', 'modelNumber', 'serialNumber', 'inspectorName', 'summaryStatus', 'passedCount', 'failedCount', 'notes', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.projectName is string && data.projectName.size() >= 1 && data.projectName.size() <= 150 &&
+        data.modelNumber is string && data.modelNumber.size() >= 1 && data.modelNumber.size() <= 80 &&
+        data.serialNumber is string && data.serialNumber.size() >= 1 && data.serialNumber.size() <= 80 &&
+        data.inspectorName is string && data.inspectorName.size() >= 1 && data.inspectorName.size() <= 100 &&
+        data.summaryStatus is string && data.summaryStatus.size() <= 32 && data.summaryStatus in ['pending', 'ready', 'hold'] &&
+        data.passedCount is number && data.passedCount >= 0 && data.passedCount <= 100 &&
+        data.failedCount is number && data.failedCount >= 0 && data.failedCount <= 100 &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCommissioningLog(data) {
+      return data.keys().hasAll(['ownerId', 'modelNumber', 'ambientTempC', 'enteringWaterTempC', 'leavingWaterTempC', 'waterFlowLs', 'voltageV', 'currentA', 'capacityPct', 'compressorStatus', 'pumpStatus', 'setpointC', 'activeAlarms', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'modelNumber', 'ambientTempC', 'enteringWaterTempC', 'leavingWaterTempC', 'waterFlowLs', 'voltageV', 'currentA', 'capacityPct', 'compressorStatus', 'pumpStatus', 'setpointC', 'activeAlarms', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.modelNumber is string && data.modelNumber.size() >= 1 && data.modelNumber.size() <= 80 &&
+        data.ambientTempC is number && data.ambientTempC >= -50 && data.ambientTempC <= 80 &&
+        data.enteringWaterTempC is number && data.enteringWaterTempC >= -20 && data.enteringWaterTempC <= 60 &&
+        data.leavingWaterTempC is number && data.leavingWaterTempC >= -20 && data.leavingWaterTempC <= 60 &&
+        data.waterFlowLs is number && data.waterFlowLs >= 0 && data.waterFlowLs <= 5000 &&
+        data.voltageV is number && data.voltageV >= 0 && data.voltageV <= 1000 &&
+        data.currentA is number && data.currentA >= 0 && data.currentA <= 5000 &&
+        data.capacityPct is number && data.capacityPct >= 0 && data.capacityPct <= 100 &&
+        data.compressorStatus is string && data.compressorStatus.size() <= 64 &&
+        data.pumpStatus is string && data.pumpStatus.size() <= 64 &&
+        data.setpointC is number && data.setpointC >= -20 && data.setpointC <= 40 &&
+        data.activeAlarms is string && data.activeAlarms.size() <= 200 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidAcademyCertificate(data) {
+      return data.keys().hasAll(['ownerId', 'recipientName', 'courseId', 'courseTitle', 'scorePct', 'certificateCode', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'recipientName', 'courseId', 'courseTitle', 'scorePct', 'certificateCode', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 100 &&
+        data.courseId is string && data.courseId.size() >= 1 && data.courseId.size() <= 80 &&
+        data.courseTitle is string && data.courseTitle.size() >= 1 && data.courseTitle.size() <= 160 &&
+        data.scorePct is number && data.scorePct >= 70 && data.scorePct <= 100 &&
+        data.certificateCode is string && data.certificateCode.size() >= 1 && data.certificateCode.size() <= 64 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidAiSupportLog(data) {
+      return data.keys().hasAll(['ownerId', 'modelNumber', 'question', 'confidence', 'sourceDoc', 'resolved', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'modelNumber', 'question', 'confidence', 'sourceDoc', 'resolved', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.modelNumber is string && data.modelNumber.size() >= 1 && data.modelNumber.size() <= 80 &&
+        data.question is string && data.question.size() >= 1 && data.question.size() <= 1000 &&
+        data.confidence is string && data.confidence.size() <= 40 && data.confidence in ['Confirmed', 'Conditional', 'Not Found in Documents'] &&
+        data.sourceDoc is string && data.sourceDoc.size() <= 200 &&
+        data.resolved is bool &&
+        data.createdAt is timestamp;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isVerified() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerified() && (resource.data.uid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(userId) && isValidUserProfile(incoming()) &&
+        isOwner(userId) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        ((incoming().role == 'learner' && incoming().plan == 'free') || isAdmin());
+      allow update: if isVerified() && isValidId(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().role == existing().role && incoming().plan == existing().plan &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'dailyAiCount', 'lastAiDate', 'completedLessons', 'updatedAt']))
+        );
+      allow delete: if isVerified() && isValidId(userId) && isAdmin();
+    }
+
+    // Collection 2: /user_sessions/{userId}
+    match /user_sessions/{userId} {
+      allow get: if isVerified() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isVerified() && (resource.data.uid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(userId) && isValidUserSession(incoming()) &&
+        isOwner(userId) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(userId) && isValidUserSession(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['activeDeviceId', 'deviceLabel', 'transferCount', 'updatedAt']))
+        );
+      allow delete: if isVerified() && isValidId(userId) && isAdmin();
+    }
+
+    // Collection 3: /documents/{docId}
+    match /documents/{docId} {
+      allow get: if isVerified() && isValidId(docId) && (resource.data.status == 'approved' || isAdmin());
+      allow list: if isVerified() && (resource.data.status == 'approved' || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(docId) && isValidTechnicalDocument(incoming()) &&
+        incoming().uploadedBy == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerified() && isValidId(docId) && isValidTechnicalDocument(incoming()) &&
+        incoming().uploadedBy == existing().uploadedBy &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'docCode', 'category', 'modelNumber', 'modelFamily', 'revision', 'docType', 'sectionRef', 'extractedContent', 'safetyNotes', 'status', 'updatedAt']) &&
+        isAdmin();
+      allow delete: if isVerified() && isValidId(docId) && isAdmin();
+    }
+
+    // Collection 4: /checklists/{checklistId}
+    match /checklists/{checklistId} {
+      allow get: if isVerified() && isValidId(checklistId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(checklistId) && isValidPreCommChecklist(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if isVerified() && isValidId(checklistId) && isValidPreCommChecklist(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(existing().ownerId) && existing().summaryStatus != 'ready' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['projectName', 'inspectorName', 'summaryStatus', 'passedCount', 'failedCount', 'notes', 'updatedAt']))
+        );
+      allow delete: if isVerified() && isValidId(checklistId) && isAdmin();
+    }
+
+    // Collection 5: /commissioning_logs/{logId}
+    match /commissioning_logs/{logId} {
+      allow get: if isVerified() && isValidId(logId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(logId) && isValidCommissioningLog(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if false;
+      allow delete: if isVerified() && isValidId(logId) && isAdmin();
+    }
+
+    // Collection 6: /certificates/{certId}
+    match /certificates/{certId} {
+      allow get: if isVerified() && isValidId(certId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(certId) && isValidAcademyCertificate(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if false;
+      allow delete: if isVerified() && isValidId(certId) && isAdmin();
+    }
+
+    // Collection 7: /ai_logs/{logId}
+    match /ai_logs/{logId} {
+      allow get: if isVerified() && isValidId(logId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isVerified() && (resource.data.ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerified() && isValidId(logId) && isValidAiSupportLog(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if isVerified() && isValidId(logId) && isValidAiSupportLog(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['resolved']) &&
+        isAdmin();
+      allow delete: if isVerified() && isValidId(logId) && isAdmin();
+    }
+  }
+}

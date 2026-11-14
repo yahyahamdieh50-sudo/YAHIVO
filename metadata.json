@@ -1,0 +1,6 @@
+{
+  "name": "HVAC PRO ACADEMY — AI Training & Technical Support",
+  "description": "Learn. Install. Commission. Troubleshoot. Document-grounded HVAC engineering training, installation and commissioning workflows, error-code diagnostics, and AI technical support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

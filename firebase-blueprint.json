@@ -1,0 +1,361 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile, role, subscription tier, and daily AI usage tracking.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["learner", "reviewer", "editor", "admin"],
+          "maxLength": 32
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "pro", "premium"],
+          "maxLength": 32
+        },
+        "dailyAiCount": {
+          "type": "number"
+        },
+        "lastAiDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "completedLessons": {
+          "type": "array",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "role", "plan", "dailyAiCount", "lastAiDate", "completedLessons", "createdAt", "updatedAt"]
+    },
+    "UserSession": {
+      "title": "UserSession",
+      "description": "Enforces mandatory one-device account access per user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "activeDeviceId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "deviceLabel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "transferCount": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "activeDeviceId", "deviceLabel", "transferCount", "createdAt", "updatedAt"]
+    },
+    "TechnicalDocument": {
+      "title": "TechnicalDocument",
+      "description": "Uploaded Daikin technical manuals, IOMs, submittals, and service documentation.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "docCode": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "modelNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "modelFamily": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "revision": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "docType": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "sectionRef": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "extractedContent": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "safetyNotes": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "archived"],
+          "maxLength": 32
+        },
+        "uploadedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["title", "docCode", "category", "modelNumber", "modelFamily", "revision", "docType", "sectionRef", "extractedContent", "safetyNotes", "status", "uploadedBy", "createdAt", "updatedAt"]
+    },
+    "PreCommChecklist": {
+      "title": "PreCommChecklist",
+      "description": "User pre-commissioning readiness inspection records.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "projectName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "modelNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "serialNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "inspectorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "summaryStatus": {
+          "type": "string",
+          "enum": ["pending", "ready", "hold"],
+          "maxLength": 32
+        },
+        "passedCount": {
+          "type": "number"
+        },
+        "failedCount": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "projectName", "modelNumber", "serialNumber", "inspectorName", "summaryStatus", "passedCount", "failedCount", "notes", "createdAt", "updatedAt"]
+    },
+    "CommissioningLog": {
+      "title": "CommissioningLog",
+      "description": "Recorded commissioning start-up and operating parameter log.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "modelNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "ambientTempC": {
+          "type": "number"
+        },
+        "enteringWaterTempC": {
+          "type": "number"
+        },
+        "leavingWaterTempC": {
+          "type": "number"
+        },
+        "waterFlowLs": {
+          "type": "number"
+        },
+        "voltageV": {
+          "type": "number"
+        },
+        "currentA": {
+          "type": "number"
+        },
+        "capacityPct": {
+          "type": "number"
+        },
+        "compressorStatus": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "pumpStatus": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "setpointC": {
+          "type": "number"
+        },
+        "activeAlarms": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "modelNumber", "ambientTempC", "enteringWaterTempC", "leavingWaterTempC", "waterFlowLs", "voltageV", "currentA", "capacityPct", "compressorStatus", "pumpStatus", "setpointC", "activeAlarms", "createdAt"]
+    },
+    "AcademyCertificate": {
+      "title": "AcademyCertificate",
+      "description": "Educational course completion certificate awarded after passing assessment.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "recipientName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "courseId": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "courseTitle": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "scorePct": {
+          "type": "number"
+        },
+        "certificateCode": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "recipientName", "courseId", "courseTitle", "scorePct", "certificateCode", "createdAt"]
+    },
+    "AiSupportLog": {
+      "title": "AiSupportLog",
+      "description": "Log of AI technical questions, confidence level, and missing reference flags for admin review.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "modelNumber": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["Confirmed", "Conditional", "Not Found in Documents"],
+          "maxLength": 40
+        },
+        "sourceDoc": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "modelNumber", "question", "confidence", "sourceDoc", "resolved", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profile, role, subscription tier, and daily AI usage counts."
+    },
+    "/user_sessions/{userId}": {
+      "schema": { "$ref": "#/entities/UserSession" },
+      "description": "Stores single active device binding per user account."
+    },
+    "/documents/{docId}": {
+      "schema": { "$ref": "#/entities/TechnicalDocument" },
+      "description": "Stores verified Daikin technical documents and manual extracts for RAG."
+    },
+    "/checklists/{checklistId}": {
+      "schema": { "$ref": "#/entities/PreCommChecklist" },
+      "description": "Stores pre-commissioning readiness inspection records per user."
+    },
+    "/commissioning_logs/{logId}": {
+      "schema": { "$ref": "#/entities/CommissioningLog" },
+      "description": "Stores commissioning operating logs per user."
+    },
+    "/certificates/{certId}": {
+      "schema": { "$ref": "#/entities/AcademyCertificate" },
+      "description": "Stores awarded educational course completion certificates."
+    },
+    "/ai_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AiSupportLog" },
+      "description": "Stores AI technical support audit logs and missing-reference queries."
+    }
+  }
+}
